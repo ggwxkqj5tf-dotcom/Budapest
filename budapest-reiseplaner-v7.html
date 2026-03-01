@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Budapest · Mai 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   THEME SYSTEM – Light & Dark
+═══════════════════════════════════════ */
+:root{
+  --bg:#f5f2ed;--surface:#fff;--s2:#f0ece5;--s3:#e8e2d9;
+  --border:#ddd6cc;--border2:#c8bfb4;
+  --text:#1a1410;--t2:#5a4e44;--t3:#9a8c80;--t4:#bfb3a8;
+  --red:#c0392b;--red-s:#fdecea;
+  --green:#1e7a46;--green-s:#e6f4ec;
+  --blue:#1a5fb4;--blue-s:#e8f0fd;
+  --amber:#c07020;--amber-s:#fff3e0;
+  --purple:#6a24b4;--purple-s:#f0e8ff;
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.1);
+  --d1:#d4541a;--d2:#1e7a46;--d3:#1a5fb4;--d4:#7b3fa0;--d5:#b07818;
+  --hh:48px;--nh:56px;--r:12px;--r-sm:8px;
+  --map-tiles:https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png;
+  --map-bg:#e8e4dc;
+  --popup-bg:var(--surface);
+  --glass:rgba(255,255,255,.92);
+  --glass-border:rgba(221,214,204,.6);
+  --crowd-low:#1e7a46;--crowd-med:#c07020;--crowd-high:#c0392b;
+}
+
+[data-theme="dark"]{
+  --bg:#0f0f14;--surface:#1a1a22;--s2:#22222c;--s3:#2c2c38;
+  --border:#333342;--border2:#444458;
+  --text:#e8e4f0;--t2:#a8a4b4;--t3:#6e6a7a;--t4:#4a4658;
+  --red:#e74c3c;--red-s:#2a1418;
+  --green:#2ecc71;--green-s:#142a1c;
+  --blue:#5dade2;--blue-s:#14202a;
+  --amber:#f0a030;--amber-s:#2a2014;
+  --purple:#a855f7;--purple-s:#1e142a;
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.3);
+  --map-bg:#1a1a22;
+  --glass:rgba(26,26,34,.92);
+  --glass-border:rgba(51,51,66,.6);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);transition:background .35s,color .35s}
+
+/* ═══════════════════════════════════════
+   HEADER – Collapsible
+═══════════════════════════════════════ */
+#hdr{
+  position:fixed;top:0;left:0;right:0;z-index:600;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow-sm);transition:all .3s ease;overflow:hidden;
+}
+#hdr-main{
+  display:flex;align-items:center;gap:10px;padding:0 14px;
+  height:var(--hh);min-height:var(--hh);
+}
+.hdr-logo{width:30px;height:30px;border-radius:8px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.hdr-name{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:700;line-height:1.1}
+.hdr-sub{font-size:.6rem;color:var(--t3)}
+.hdr-right{display:flex;gap:5px;margin-left:auto;align-items:center}
+.hdr-chip{background:var(--s2);border:1px solid var(--border);color:var(--t2);padding:3px 8px;border-radius:20px;font-size:.6rem;font-weight:600;white-space:nowrap}
+@media(max-width:500px){.hdr-chip{display:none}}
+.icon-btn{width:34px;height:34px;border:none;cursor:pointer;border-radius:var(--r-sm);background:var(--s2);color:var(--t2);font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.icon-btn:hover{background:var(--s3)}
+.btn-save{height:32px;padding:0 11px;border:none;cursor:pointer;border-radius:var(--r-sm);background:var(--red);color:#fff;font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:700;white-space:nowrap;transition:.15s}
+.btn-save:hover{opacity:.88}
+
+/* Header collapse toggle */
+.hdr-collapse{
+  width:34px;height:34px;border:none;cursor:pointer;border-radius:var(--r-sm);
+  background:var(--s2);color:var(--t2);font-size:11px;
+  display:none;align-items:center;justify-content:center;transition:.2s;
+}
+.hdr-collapse:hover{background:var(--s3)}
+@media(max-width:700px){.hdr-collapse{display:flex}}
+
+#hdr.collapsed{height:0;border-bottom:none;box-shadow:none;pointer-events:none;opacity:0}
+#hdr-expand{
+  display:none;position:fixed;top:6px;left:6px;z-index:601;
+  width:36px;height:36px;border:1px solid var(--border);cursor:pointer;
+  border-radius:10px;background:var(--glass);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  color:var(--t2);font-size:14px;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-sm);transition:.2s;
+}
+#hdr-expand:hover{background:var(--s2)}
+#hdr.collapsed~#hdr-expand{display:flex}
+
+/* Theme toggle */
+.theme-toggle{
+  width:34px;height:34px;border:none;cursor:pointer;border-radius:var(--r-sm);
+  background:var(--s2);color:var(--t2);font-size:15px;
+  display:flex;align-items:center;justify-content:center;transition:.3s;
+}
+.theme-toggle:hover{background:var(--s3);transform:rotate(20deg)}
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+#app{position:fixed;top:var(--hh);left:0;right:0;bottom:0;display:flex;transition:top .3s}
+#app.hdr-gone{top:0}
+#sidebar{width:360px;min-width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#map-wrap{flex:1;position:relative;min-width:0}
+#map{width:100%;height:100%;background:var(--map-bg)}
+
+/* ═══════════════════════════════════════
+   MAP CONTROLS – Compact Horizontal
+═══════════════════════════════════════ */
+/* Top pill bar: horizontal scroll for day filters */
+#map-top-bar{
+  position:absolute;top:8px;left:50px;right:8px;z-index:400;
+  display:flex;gap:4px;align-items:center;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;padding:2px 0;
+}
+#map-top-bar::-webkit-scrollbar{display:none}
+.mctrl{
+  background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);border-radius:20px;
+  padding:5px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  color:var(--t2);box-shadow:var(--shadow-sm);transition:.2s;text-align:center;
+  white-space:nowrap;flex-shrink:0;
+}
+.mctrl:hover{background:var(--s2)}
+.mctrl.on{background:var(--red);color:#fff;border-color:var(--red)}
+.day-mctrl.on{color:#fff;border-color:transparent}
+.mctrl-metro{border-radius:20px;padding:5px 9px;font-size:.7rem}
+
+/* Metro box – floating popover, not in the bar */
+#metro-box{
+  display:none;position:absolute;top:42px;right:8px;z-index:410;
+  background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--glass-border);border-radius:var(--r);padding:10px 12px;
+  box-shadow:var(--shadow);min-width:155px;animation:fadeUp .2s ease;
+}
+#metro-box.open{display:block}
+.metro-title{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:5px}
+.metro-row{display:flex;align-items:center;gap:5px;padding:2px 0;font-size:.7rem;color:var(--t2);cursor:pointer}
+.metro-row input{accent-color:var(--red);width:12px;height:12px;cursor:pointer}
+.mbadge{width:18px;height:18px;border-radius:4px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:900;flex-shrink:0}
+.metro-hide-btn{margin-top:6px;padding-top:5px;border-top:1px solid var(--border);width:100%;background:var(--s2);border:none;border-radius:6px;padding:4px 0;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--t2);cursor:pointer}
+.metro-hide-btn:hover{background:var(--s3)}
+
+/* Legend */
+#legend{position:absolute;bottom:10px;left:10px;z-index:400;
+  background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);border-radius:var(--r);padding:7px 10px;
+  box-shadow:var(--shadow-sm);font-size:.65rem}
+.leg-title{font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;font-size:.58rem}
+.leg-row{display:flex;align-items:center;gap:5px;color:var(--t2);margin:2px 0}
+.leg-line{width:16px;height:3px;border-radius:2px}
+@media(max-width:700px){#legend{display:none}}
+
+/* ═══════════════════════════════════════
+   POPUP
+═══════════════════════════════════════ */
+.leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:var(--r)!important;box-shadow:0 4px 24px rgba(0,0,0,.13)!important;color:var(--text)!important}
+.leaflet-popup-tip{background:var(--surface)!important}
+.leaflet-popup-content{margin:12px 14px!important;font-family:'DM Sans',sans-serif!important;color:var(--text)!important;min-width:170px}
+.pu-name{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;margin-bottom:2px}
+.pu-cat{font-size:.7rem;color:var(--t3);margin-bottom:6px}
+.pu-row{display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--t2);margin:2px 0}
+.pu-hours{background:var(--green-s);border-left:3px solid var(--green);padding:5px 8px;border-radius:0 6px 6px 0;font-size:.7rem;color:var(--green);margin-top:5px;font-weight:600}
+.pu-tag{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:6px;font-size:.65rem;font-weight:700;color:#fff}
+.pu-route{margin-top:7px;padding:5px 8px;border-radius:7px;background:var(--s2);border:1px solid var(--border)}
+.pu-route-title{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin-bottom:2px}
+.pu-route-val{font-size:.75rem;font-weight:600;color:var(--text)}
+.pu-crowd{display:flex;align-items:center;gap:4px;margin-top:5px;font-size:.7rem;font-weight:600;padding:4px 8px;border-radius:6px}
+.pu-crowd.low{background:var(--green-s);color:var(--green)}
+.pu-crowd.med{background:var(--amber-s);color:var(--amber)}
+.pu-crowd.high{background:var(--red-s);color:var(--red)}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.tab-btn{flex:1;background:none;border:none;border-bottom:2.5px solid transparent;margin-bottom:-1px;padding:10px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.65rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tab-btn .ti{font-size:.9rem}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--red);border-bottom-color:var(--red)}
+
+/* PANEL */
+.panel{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.pane{display:none}.pane.active{display:block}
+
+/* ═══════════════════════════════════════
+   DAY BLOCKS
+═══════════════════════════════════════ */
+.day-block{border-bottom:2px solid var(--s2)}
+.day-head{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:var(--surface);transition:.15s;position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)}
+.day-head:hover{background:var(--s2)}
+.day-stripe{width:4px;height:34px;border-radius:3px;flex-shrink:0}
+.day-info{flex:1}
+.day-label{font-family:'Playfair Display',serif;font-size:.85rem;font-weight:700}
+.day-date{font-size:.65rem;color:var(--t3);margin-top:1px}
+.day-meta{display:flex;gap:4px;align-items:center}
+.day-count{background:var(--s2);border:1px solid var(--border);color:var(--t2);padding:2px 6px;border-radius:10px;font-size:.62rem;font-weight:700}
+.day-dist{font-size:.62rem;color:var(--t3);padding:2px 6px;background:var(--s2);border-radius:10px;border:1px solid var(--border)}
+.chev{color:var(--t4);transition:.25s;font-size:.7rem}
+.day-block.closed .chev{transform:rotate(-90deg)}
+.day-body{background:var(--bg)}
+.day-block.closed .day-body{display:none}
+
+/* ═══════════════════════════════════════
+   LOCATION CARDS
+═══════════════════════════════════════ */
+.loc-card{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;cursor:pointer;transition:.15s;border-bottom:1px solid var(--border);background:var(--surface)}
+.loc-card:hover{background:var(--s2)}
+.loc-card.active{background:var(--red-s)}
+.loc-num{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin-top:1px}
+.loc-body{flex:1;min-width:0}
+.loc-name{font-weight:600;font-size:.84rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.loc-cat{font-size:.65rem;color:var(--t3);margin-top:1px}
+.loc-chips{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;font-size:.62rem;font-weight:600}
+.chip-price{background:var(--green-s);color:var(--green)}
+.chip-time{background:var(--s2);color:var(--t2)}
+.chip-star{background:var(--amber-s);color:var(--amber)}
+.chip-hours{background:var(--purple-s);color:var(--purple)}
+.chip-bus{background:var(--blue-s);color:var(--blue);font-weight:700}
+.chip-crowd{font-weight:700}
+.chip-crowd.low{background:var(--green-s);color:var(--green)}
+.chip-crowd.med{background:var(--amber-s);color:var(--amber)}
+.chip-crowd.high{background:var(--red-s);color:var(--red)}
+.chip-book{background:#e8f0fd;color:#1a5fb4;font-weight:700}
+.loc-actions{display:flex;gap:3px;opacity:0;transition:.2s;flex-shrink:0}
+.loc-card:hover .loc-actions,.loc-card:active .loc-actions{opacity:1}
+.ic{width:26px;height:26px;border:none;cursor:pointer;border-radius:6px;background:none;color:var(--t3);font-size:.78rem;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ic:hover{background:var(--s2);color:var(--text)}
+.ic.del:hover{background:var(--red-s);color:var(--red)}
+
+/* ═══════════════════════════════════════
+   SEGMENT ROWS
+═══════════════════════════════════════ */
+.route-seg{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 14px 5px 48px;background:var(--bg);
+  border-bottom:1px solid var(--border);
+  cursor:pointer;transition:.15s;user-select:none;
+}
+.route-seg:hover{background:var(--s3)}
+.route-seg.expanded{background:var(--s2)}
+.seg-icon{font-size:.75rem;flex-shrink:0}
+.seg-main{flex:1}
+.seg-info{font-size:.68rem;color:var(--t2);font-weight:600}
+.seg-dist{font-size:.65rem;color:var(--t3)}
+.seg-expand-btn{font-size:.6rem;color:var(--t3);padding:2px 6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;white-space:nowrap;flex-shrink:0}
+
+/* Segment detail panel */
+.seg-detail{display:none;background:var(--s2);border-bottom:1px solid var(--border);padding:7px 14px 9px 48px}
+.seg-detail.open{display:block}
+.seg-opt{display:flex;align-items:flex-start;gap:7px;padding:6px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:5px}
+.seg-opt:last-child{margin-bottom:0}
+.seg-opt-icon{font-size:.9rem;flex-shrink:0;margin-top:1px}
+.seg-opt-body{flex:1}
+.seg-opt-title{font-size:.7rem;font-weight:700;color:var(--text)}
+.seg-opt-desc{font-size:.65rem;color:var(--t2);margin-top:2px;line-height:1.4}
+.seg-opt-badge{display:inline-block;margin-top:3px;padding:2px 7px;border-radius:8px;font-size:.6rem;font-weight:700}
+
+/* Airport & Hotel cards */
+.airport-card{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--s2),var(--surface));cursor:pointer}
+.airport-card:hover{background:var(--s2)}
+.airport-icon{width:24px;height:24px;border-radius:6px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.airport-body{flex:1}
+.airport-name{font-weight:600;font-size:.82rem}
+.airport-sub{font-size:.65rem;color:var(--t3);margin-top:2px}
+.transfer-info{background:var(--blue-s);border:1px solid var(--blue);border-radius:7px;padding:5px 8px;margin-top:6px;font-size:.68rem;color:var(--blue);font-weight:500;line-height:1.4}
+.hotel-checkin{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--amber-s)}
+.hotel-checkin-icon{font-size:.9rem}
+.hotel-checkin-text{font-size:.72rem;font-weight:600;color:var(--amber)}
+.hotel-checkin-sub{font-size:.62rem;color:var(--t2);margin-top:1px}
+
+/* ═══════════════════════════════════════
+   ADD FORM
+═══════════════════════════════════════ */
+.add-wrap{padding:12px 14px}
+.add-wrap h3{font-family:'Playfair Display',serif;font-size:.9rem;margin-bottom:10px}
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.fg label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:7px 9px;border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;width:100%;transition:.2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--red)}
+.fg textarea{resize:vertical;min-height:44px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tip-box{background:var(--amber-s);border-left:3px solid var(--amber);padding:6px 9px;border-radius:0 6px 6px 0;font-size:.7rem;color:var(--t2);margin-bottom:9px}
+.btn-row{display:flex;gap:6px}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:8px 14px;border-radius:var(--r-sm);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;transition:.15s}
+.btn-r{background:var(--red);color:#fff}.btn-r:hover{opacity:.88}
+.btn-g{background:var(--s2);color:var(--t2);border:1px solid var(--border)}.btn-g:hover{background:var(--s3)}
+.manage-item{display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.76rem}
+.manage-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ═══════════════════════════════════════
+   OVERVIEW – Enhanced with Crowd & Booking
+═══════════════════════════════════════ */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:10px 14px}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:9px;text-align:center}
+.stat-n{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--red);font-weight:700}
+.stat-l{font-size:.62rem;color:var(--t3);margin-top:1px}
+.ov-sep{height:1px;background:var(--border);margin:0 14px 5px}
+.ov-section-title{padding:6px 14px 2px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
+.ov-day{padding:4px 14px}
+.ov-day-lbl{font-family:'Playfair Display',serif;font-size:.8rem;font-weight:700;margin-bottom:3px}
+.ov-loc{display:flex;align-items:center;gap:5px;padding:3px 4px;border-radius:6px;cursor:pointer;transition:.15s;font-size:.75rem}
+.ov-loc:hover{background:var(--s2)}
+.ov-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ov-price{margin-left:auto;font-size:.64rem;color:var(--green);white-space:nowrap}
+.ov-crowd{font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+.ov-crowd.low{background:var(--green-s);color:var(--green)}
+.ov-crowd.med{background:var(--amber-s);color:var(--amber)}
+.ov-crowd.high{background:var(--red-s);color:var(--red)}
+.ov-book{font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--blue-s);color:var(--blue);white-space:nowrap;flex-shrink:0}
+
+/* Booking summary table */
+.booking-table{margin:6px 14px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.booking-row{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border);font-size:.72rem}
+.booking-row:last-child{border-bottom:none}
+.booking-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.booking-name{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.booking-badge{padding:2px 7px;border-radius:8px;font-size:.6rem;font-weight:700}
+.booking-badge.must{background:var(--red-s);color:var(--red)}
+.booking-badge.rec{background:var(--amber-s);color:var(--amber)}
+.booking-badge.free{background:var(--green-s);color:var(--green)}
+
+/* ═══════════════════════════════════════
+   MOBILE NAV
+═══════════════════════════════════════ */
+#mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:700;height:var(--nh);
+  background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -2px 12px rgba(0,0,0,.08)}
+.mn-btn{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'DM Sans',sans-serif;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);padding:6px 0;min-height:42px;transition:.2s}
+.mn-btn .mi{font-size:1rem}
+.mn-btn.active{color:var(--red)}
+
+/* DRAWER */
+#drawer{display:flex;flex-direction:column;position:fixed;bottom:var(--nh);left:0;right:0;z-index:650;background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);max-height:calc(100svh - var(--hh) - var(--nh) - 10px);box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+#drawer.open{transform:translateY(0)}
+#drawer-handle{display:flex;justify-content:center;padding:8px 0 4px;cursor:pointer;flex-shrink:0}
+.handle-bar{width:32px;height:4px;border-radius:3px;background:var(--border)}
+.dtab-bar{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.dtab-btn{flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.62rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;transition:.2s}
+.dtab-btn.active{color:var(--red);border-bottom-color:var(--red)}
+.drawer-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dpane{display:none}.dpane.active{display:block}
+
+/* MODAL */
+#modal-bg{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.4);align-items:center;justify-content:center;padding:16px}
+#modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:18px;width:100%;max-width:400px;box-shadow:0 16px 48px rgba(0,0,0,.18)}
+.modal h3{font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:7px}
+.modal textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:9px;border-radius:8px;font-family:monospace;font-size:.72rem;height:130px;resize:none;outline:none}
+.modal-foot{display:flex;gap:6px;justify-content:flex-end;margin-top:9px}
+
+/* TOAST – auto-dismiss, no permanent coords */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--text);color:var(--bg);padding:7px 16px;border-radius:30px;font-size:.75rem;font-weight:600;z-index:9999;transition:transform .28s ease,opacity .28s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;opacity:0}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* COORD BADGE – dismissable floating */
+#coord-badge{
+  display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:500;
+  background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--glass-border);border-radius:20px;padding:5px 12px 5px 10px;
+  box-shadow:var(--shadow-sm);font-size:.7rem;font-weight:600;color:var(--t2);
+  align-items:center;gap:6px;cursor:default;animation:fadeUp .25s ease;
+}
+#coord-badge.visible{display:inline-flex}
+#coord-badge .cb-close{
+  width:18px;height:18px;border:none;cursor:pointer;border-radius:50%;
+  background:var(--s3);color:var(--t3);font-size:10px;
+  display:flex;align-items:center;justify-content:center;transition:.15s;
+}
+#coord-badge .cb-close:hover{background:var(--red-s);color:var(--red)}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media(max-width:700px){
+  #sidebar{display:none}
+  #mob-nav{display:flex}
+  #app{bottom:var(--nh)}
+}
+@media(min-width:701px){
+  #mob-nav{display:none!important}
+  #drawer{display:none!important}
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Dark mode map filter */
+[data-theme="dark"] .leaflet-tile-pane{filter:brightness(.78) contrast(1.1) saturate(.85)}
+[data-theme="dark"] .leaflet-popup-content-wrapper{box-shadow:0 4px 24px rgba(0,0,0,.4)!important}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div id="hdr-main">
+    <div class="hdr-logo">🏰</div>
+    <div>
+      <div class="hdr-name">Budapest 2026</div>
+      <div class="hdr-sub">Persönlicher Reiseplaner</div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-chip">✈ 18.05 · 12:00</div>
+      <div class="hdr-chip">✈ 22.05 · 20:30</div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Tag/Nacht-Modus">🌙</button>
+      <button class="icon-btn" onclick="openModal()" title="Import">📂</button>
+      <button class="btn-save" onclick="exportJSON()">💾</button>
+      <button class="hdr-collapse" onclick="collapseHeader()" title="Header ausblenden">▲</button>
+    </div>
+  </div>
+</header>
+<button id="hdr-expand" onclick="expandHeader()" title="Header einblenden">▼</button>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="tab-bar" id="desk-tabbar">
+      <button class="tab-btn active" onclick="deskTab('plan',this)"><span class="ti">📅</span>Tagesplan</button>
+      <button class="tab-btn" onclick="deskTab('ov',this)"><span class="ti">📊</span>Übersicht</button>
+      <button class="tab-btn" onclick="deskTab('add',this)"><span class="ti">➕</span>Hinzufügen</button>
+    </div>
+    <div class="panel" id="desk-panel">
+      <div class="pane active" id="dp-plan"></div>
+      <div class="pane" id="dp-ov"></div>
+      <div class="pane" id="dp-add"></div>
+    </div>
+  </aside>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="map-top-bar">
+      <button class="mctrl on" id="fb-all" onclick="filterDay('all',this)">Alle</button>
+      <button class="mctrl day-mctrl" id="fb-1" onclick="filterDay(1,this)">T1</button>
+      <button class="mctrl day-mctrl" id="fb-2" onclick="filterDay(2,this)">T2</button>
+      <button class="mctrl day-mctrl" id="fb-3" onclick="filterDay(3,this)">T3</button>
+      <button class="mctrl day-mctrl" id="fb-4" onclick="filterDay(4,this)">T4</button>
+      <button class="mctrl day-mctrl" id="fb-5" onclick="filterDay(5,this)">T5</button>
+      <button class="mctrl mctrl-metro" id="metro-toggle-btn" onclick="toggleMetro()">🚇</button>
+    </div>
+    <div id="metro-box">
+      <div class="metro-title">U-Bahn-Linien</div>
+      <label class="metro-row"><input type="checkbox" id="cm1" checked onchange="toggleLine('m1')"><div class="mbadge" style="background:#f0b800">M1</div>Millennium</label>
+      <label class="metro-row"><input type="checkbox" id="cm2" checked onchange="toggleLine('m2')"><div class="mbadge" style="background:#d92b2b">M2</div>Rot</label>
+      <label class="metro-row"><input type="checkbox" id="cm3" checked onchange="toggleLine('m3')"><div class="mbadge" style="background:#1a5bbf">M3</div>Blau</label>
+      <label class="metro-row"><input type="checkbox" id="cm4" checked onchange="toggleLine('m4')"><div class="mbadge" style="background:#22a04c">M4</div>Grün</label>
+      <button class="metro-hide-btn" onclick="hideAllMetro()">Alle ausblenden</button>
+    </div>
+    <div id="legend">
+      <div class="leg-title">Legende</div>
+      <div class="leg-row"><div class="leg-line" style="background:var(--d1)"></div>Tag 1</div>
+      <div class="leg-row"><div class="leg-line" style="background:var(--d2)"></div>Tag 2</div>
+      <div class="leg-row"><div class="leg-line" style="background:var(--d3)"></div>Tag 3</div>
+      <div class="leg-row"><div class="leg-line" style="background:var(--d4)"></div>Tag 4</div>
+      <div class="leg-row"><div class="leg-line" style="background:var(--d5)"></div>Tag 5</div>
+      <div class="leg-row" style="margin-top:3px"><span>🏨</span>Hotel</div>
+    </div>
+  </div>
+</div>
+
+<!-- COORD BADGE – dismissable -->
+<div id="coord-badge">
+  <span id="coord-text">📍 47.5000, 19.0500</span>
+  <button class="cb-close" onclick="hideCoordBadge()">✕</button>
+</div>
+
+<nav id="mob-nav">
+  <button class="mn-btn active" id="mn-map" onclick="mobNav('map',this)"><span class="mi">🗺</span>Karte</button>
+  <button class="mn-btn" id="mn-plan" onclick="mobNav('plan',this)"><span class="mi">📅</span>Plan</button>
+  <button class="mn-btn" id="mn-ov" onclick="mobNav('ov',this)"><span class="mi">📊</span>Übersicht</button>
+  <button class="mn-btn" id="mn-add" onclick="mobNav('add',this)"><span class="mi">➕</span>Neu</button>
+</nav>
+
+<div id="drawer">
+  <div id="drawer-handle" onclick="closeDrawer()"><div class="handle-bar"></div></div>
+  <div class="dtab-bar">
+    <button class="dtab-btn active" onclick="drawerTab('dplan',this)">📅 Plan</button>
+    <button class="dtab-btn" onclick="drawerTab('dov',this)">📊 Übersicht</button>
+    <button class="dtab-btn" onclick="drawerTab('dadd',this)">➕ Neu</button>
+  </div>
+  <div class="drawer-body">
+    <div class="dpane active" id="dplan"></div>
+    <div class="dpane" id="dov"></div>
+    <div class="dpane" id="dadd"></div>
+  </div>
+</div>
+
+<div id="modal-bg">
+  <div class="modal">
+    <h3>📂 Plan importieren</h3>
+    <p style="font-size:.75rem;color:var(--t3);margin-bottom:6px">JSON-Code einfügen:</p>
+    <textarea id="import-json" placeholder='{"locations":[]}'></textarea>
+    <div class="modal-foot">
+      <button class="btn btn-g" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-r" onclick="importJSON()">Importieren</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONSTANTS & DATA
+═══════════════════════════════════════ */
+const DAYS=[
+  {id:1,label:'Tag 1',date:'So, 18. Mai · ab 12:00',color:'#d4541a'},
+  {id:2,label:'Tag 2',date:'Mo, 19. Mai · Ganztags',color:'#1e7a46'},
+  {id:3,label:'Tag 3',date:'Di, 20. Mai · Ganztags',color:'#1a5fb4'},
+  {id:4,label:'Tag 4',date:'Mi, 21. Mai · Ganztags',color:'#7b3fa0'},
+  {id:5,label:'Tag 5',date:'Do, 22. Mai · bis 18:30',color:'#b07818'},
+];
+const HOTEL={lat:47.5052,lng:19.0665,name:'Hotel – Izabella u. 61'};
+const AIRPORT={lat:47.4385,lng:19.2540};
+const DAY_COLORS=['','#d4541a','#1e7a46','#1a5fb4','#7b3fa0','#b07818'];
+
+// crowd: 'low'|'med'|'high', booking: 'must'|'recommended'|'none'
+let locations=[
+  // TAG 1
+  {id:1,day:1,name:'Flughafen Ankunft ✈',type:'Flughafen',lat:AIRPORT.lat,lng:AIRPORT.lng,price:'–',time:'12:00',duration:'30 Min',rating:null,hours:null,notes:'Bus 100E → Deák tér (~30 Min, ~€4) oder Taxi (~€30-35).',busInfo:'🚌 Bus 100E: Flughafen → Deák Ferenc tér · ~30 Min · €4',crowd:null,booking:'none'},
+  {id:2,day:1,name:'St.-Stephans-Basilika',type:'Kirche',lat:47.5009,lng:19.0540,price:'~€5',time:'14:00',duration:'~1h',rating:4.7,hours:'Mo–Sa 9–17h, So 13–17h',notes:'Kuppel-Panorama separat ~€10. Imposanter Einstieg nach Hotel-Check-in.',busInfo:null,crowd:'med',booking:'none'},
+  {id:3,day:1,name:'Parlamentsgebäude',type:'Sehenswürdigkeit',lat:47.5071,lng:19.0457,price:'~€22 (Tour)',time:'16:00',duration:'~1.5h',rating:4.8,hours:'Täglich 8–18h (letzte Tour 15h!)',notes:'Tour vorab online buchen! Abends spektakulär beleuchtet.',busInfo:null,crowd:'high',booking:'must'},
+  {id:4,day:1,name:'Kettenbrücke',type:'Sehenswürdigkeit',lat:47.4990,lng:19.0437,price:'Kostenlos',time:'18:00',duration:'~45 Min',rating:4.7,hours:'Jederzeit zugänglich',notes:'Zu Fuß überqueren. Beste Fotos bei Sonnenuntergang!',busInfo:null,crowd:'med',booking:'none'},
+  {id:5,day:1,name:'Donaupromenade',type:'Aussichtspunkt',lat:47.5020,lng:19.0510,price:'Kostenlos',time:'19:30',duration:'~1h',rating:null,hours:'Jederzeit zugänglich',notes:'Abendspaziergang am Donauufer. Illuminiertes Parlament.',busInfo:null,crowd:'low',booking:'none'},
+  // TAG 2
+  {id:6,day:2,name:'Fischerbastei',type:'Aussichtspunkt',lat:47.5022,lng:19.0348,price:'Kostenlos',time:'09:30',duration:'~1h',rating:4.8,hours:'Täglich 9–23h (Türme €3)',notes:'Früh morgens ohne Menschenmassen. Bester Panoramablick.',busInfo:'🚌 Bus 16 / 16A: Hősök tere / Széchenyi → Dísz tér · ~15 Min',crowd:'high',booking:'none'},
+  {id:7,day:2,name:'Matthiaskirche',type:'Kirche',lat:47.5020,lng:19.0342,price:'~€9',time:'10:30',duration:'~45 Min',rating:4.8,hours:'Mo–Fr 9–17h, Sa 9–12h, So 13–17h',notes:'Zsolnay-Keramik-Dach einzigartig. Direkt neben Fischerbastei.',busInfo:null,crowd:'med',booking:'recommended'},
+  {id:8,day:2,name:'Budaer Burg',type:'Museum',lat:47.4962,lng:19.0396,price:'~€10–15',time:'12:00',duration:'~2h',rating:4.7,hours:'Di–So 10–18h, Mo geschlossen',notes:'Seilbahn Sikló ~€4 rauf oder zu Fuß. Ungarisches Nationalmuseum.',busInfo:'🚌 Seilbahn (Budavári Sikló): Lánchíd utca → Burg · ~3 Min',crowd:'med',booking:'recommended'},
+  {id:9,day:2,name:'Gellértberg',type:'Aussichtspunkt',lat:47.4868,lng:19.0461,price:'Kostenlos',time:'16:00',duration:'~1.5h',rating:4.8,hours:'Jederzeit zugänglich',notes:'Bester 360°-Panoramablick über Budapest. Sonnenuntergang!',busInfo:'🚌 Bus 27: Móricz Zsigmond körtér → Gellért-hegy',crowd:'low',booking:'none'},
+  // TAG 3
+  {id:10,day:3,name:'Heldenplatz',type:'Sehenswürdigkeit',lat:47.5149,lng:19.0779,price:'Kostenlos',time:'09:30',duration:'~45 Min',rating:4.7,hours:'Jederzeit zugänglich',notes:'Ikonisches Millennium-Denkmal. M1 U-Bahn direkt hin.',busInfo:'🚇 M1 (Gelb): Vörösmarty tér → Hősök tere · ~15 Min',crowd:'med',booking:'none'},
+  {id:11,day:3,name:'Vajdahunyad-Burg',type:'Sehenswürdigkeit',lat:47.5149,lng:19.0831,price:'Kostenlos (außen)',time:'10:30',duration:'~1h',rating:4.7,hours:'Außen jederzeit · Museum Di–So 10–17h',notes:'Märchenschloss im Stadtpark. 2 Min Fußweg vom Heldenplatz.',busInfo:null,crowd:'low',booking:'none'},
+  {id:12,day:3,name:'Széchenyi-Therme',type:'Therme / Bad',lat:47.5185,lng:19.0808,price:'~€25–35',time:'12:00',duration:'~3h',rating:4.5,hours:'Täglich 6–22h',notes:'Größtes Thermalbad Europas. Direkter Fußweg vom Stadtpark.',busInfo:null,crowd:'high',booking:'must'},
+  {id:13,day:3,name:'Andrássy-Straße',type:'Sehenswürdigkeit',lat:47.5090,lng:19.0680,price:'Kostenlos',time:'16:30',duration:'~1h',rating:4.5,hours:'Jederzeit zugänglich',notes:'UNESCO-Prachtboulevard. M1 zurück ins Stadtzentrum.',busInfo:'🚇 M1: Hősök tere → Vörösmarty tér (zurück Richtung Hotel)',crowd:'low',booking:'none'},
+  // TAG 4
+  {id:14,day:4,name:'Große Synagoge',type:'Museum',lat:47.4986,lng:19.0609,price:'~€15',time:'10:00',duration:'~1.5h',rating:4.5,hours:'Mo–Fr 10–18h, So 10–16h, Sa geschlossen',notes:'Größte Synagoge Europas. Holocaust-Gedenkgarten.',busInfo:null,crowd:'high',booking:'must'},
+  {id:15,day:4,name:'Jüdisches Viertel',type:'Sehenswürdigkeit',lat:47.4993,lng:19.0621,price:'Kostenlos',time:'12:00',duration:'~1h',rating:null,hours:'Jederzeit zugänglich',notes:'Straßenkunst, Cafés, authentisches Flair. Kazinczy utca erkunden.',busInfo:null,crowd:'low',booking:'none'},
+  {id:16,day:4,name:'Fat Mama Restaurant',type:'Restaurant',lat:47.4979,lng:19.0628,price:'~€12–20 p.P.',time:'13:30',duration:'~1.5h',rating:4.8,hours:'Täglich 12–23h',notes:'Top-bewertet! Ungarische Küche + Live-Musik abends.',busInfo:null,crowd:'med',booking:'recommended'},
+  {id:17,day:4,name:'Große Markthalle',type:'Einkaufen',lat:47.4870,lng:19.0599,price:'Eintritt frei',time:'15:30',duration:'~1h',rating:4.5,hours:'Mo 6–17h · Di–Fr 6–18h · Sa 6–15h · So Ruhetag',notes:'Souvenirs, Paprika, Salami. OG: Imbisse & Folklore.',busInfo:'🚇 M4: Kálvin tér · 2 Min Fußweg',crowd:'high',booking:'none'},
+  {id:18,day:4,name:'Szimpla Kert',type:'Nachtleben',lat:47.4994,lng:19.0648,price:'Eintritt frei',time:'20:30',duration:'Abend',rating:4.5,hours:'Mo–Do 12–4h · Fr–So 12–5h',notes:'Berühmtester Ruin-Pub. Quirky Atmosphäre, Craft Beer.',busInfo:null,crowd:'high',booking:'none'},
+  // TAG 5
+  {id:19,day:5,name:'Frühstück & Zentralmarkt',type:'Restaurant',lat:47.4888,lng:19.0605,price:'~€8–12',time:'08:30',duration:'~1h',rating:null,hours:'Mo 6–17h · Di–Fr 6–18h · Sa 6–15h',notes:'Letzte Souvenirs morgens bei weniger Betrieb.',busInfo:null,crowd:'low',booking:'none'},
+  {id:20,day:5,name:'Parasztkonyha',type:'Restaurant',lat:47.4995,lng:19.0514,price:'~€15–25',time:'12:00',duration:'~1.5h',rating:4.8,hours:'Täglich 12–22h',notes:'Letztes ungarisches Essen! Reservierung empfohlen.',busInfo:null,crowd:'med',booking:'recommended'},
+  {id:21,day:5,name:'Flughafen Abflug ✈',type:'Flughafen',lat:AIRPORT.lat,lng:AIRPORT.lng,price:'–',time:'18:00',duration:'Transfer ~45 Min',rating:null,hours:null,notes:'Abfahrt ~18:00 (Flug 20:30). Mindestens 2h Check-in-Vorlauf!',busInfo:'🚌 Bus 100E: Deák Ferenc tér → Flughafen · ~30 Min · €4',crowd:null,booking:'none'},
+];
+
+let nextId=300, currentFilter='all', map=null, mapFallbackMode=false;
+let routeLayers=[], markerLayers=[];
+let metroOn=false, metroLines={m1:null,m2:null,m3:null,m4:null};
+let metroDots={m1:[],m2:[],m3:[],m4:[]};
+let metroState={m1:true,m2:true,m3:true,m4:true};
+let isDark=false, coordTimer=null;
+
+/* ═══════════════════════════════════════
+   METRO DATA
+═══════════════════════════════════════ */
+const METRO={
+  m1:{color:'#f0b800',name:'M1 Millennium',stations:[
+    {n:'Vörösmarty tér',lat:47.4968,lng:19.0506},{n:'Deák Ferenc tér',lat:47.4988,lng:19.0538},
+    {n:'Bajcsy-Zsilinszky út',lat:47.5016,lng:19.0547},{n:'Opera',lat:47.5039,lng:19.0582},
+    {n:'Oktogon',lat:47.5063,lng:19.0622},{n:'Vörösmarty utca',lat:47.5086,lng:19.0659},
+    {n:'Kodály körönd',lat:47.5108,lng:19.0709},{n:'Bajza utca',lat:47.5131,lng:19.0742},
+    {n:'Hősök tere',lat:47.5148,lng:19.0770},{n:'Széchenyi fürdő',lat:47.5188,lng:19.0801},
+    {n:'Mexikói út',lat:47.5218,lng:19.0822},
+  ]},
+  m2:{color:'#d92b2b',name:'M2',stations:[
+    {n:'Déli pályaudvar',lat:47.4942,lng:19.0299},{n:'Széll Kálmán tér',lat:47.5067,lng:19.0238},
+    {n:'Batthyány tér',lat:47.5073,lng:19.0369},{n:'Kossuth Lajos tér',lat:47.5075,lng:19.0474},
+    {n:'Deák Ferenc tér',lat:47.4988,lng:19.0538},{n:'Astoria',lat:47.4965,lng:19.0616},
+    {n:'Blaha Lujza tér',lat:47.4976,lng:19.0713},{n:'Keleti pályaudvar',lat:47.5001,lng:19.0830},
+  ]},
+  m3:{color:'#1a5bbf',name:'M3',stations:[
+    {n:'Lehel tér',lat:47.5178,lng:19.0541},{n:'Nyugati pályaudvar',lat:47.5082,lng:19.0548},
+    {n:'Arany János utca',lat:47.5040,lng:19.0546},{n:'Deák Ferenc tér',lat:47.4988,lng:19.0538},
+    {n:'Ferenciek tere',lat:47.4943,lng:19.0546},{n:'Kálvin tér',lat:47.4896,lng:19.0616},
+    {n:'Corvin-negyed',lat:47.4843,lng:19.0654},{n:'Klinikák',lat:47.4790,lng:19.0697},
+    {n:'Nagyvárad tér',lat:47.4748,lng:19.0763},{n:'Népliget',lat:47.4680,lng:19.0909},
+  ]},
+  m4:{color:'#22a04c',name:'M4',stations:[
+    {n:'Kelenföld',lat:47.4643,lng:19.0206},{n:'Gellért tér',lat:47.4872,lng:19.0479},
+    {n:'Fővám tér',lat:47.4864,lng:19.0573},{n:'Kálvin tér',lat:47.4896,lng:19.0616},
+    {n:'Rákóczi tér',lat:47.4945,lng:19.0729},{n:'II. János Pál pápa tér',lat:47.4977,lng:19.0791},
+    {n:'Keleti pályaudvar',lat:47.5001,lng:19.0830},
+  ]},
+};
+
+/* ═══════════════════════════════════════
+   UTILITY FUNCTIONS
+═══════════════════════════════════════ */
+const dayColor=d=>DAY_COLORS[d]||'#888';
+
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371000,r=Math.PI/180,dLat=(lat2-lat1)*r,dLng=(lng2-lng1)*r;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+function calcWalking(lat1,lng1,lat2,lng2){
+  const straight=haversine(lat1,lng1,lat2,lng2);
+  const dist=straight*1.35; // street detour
+  return{dist,dur:dist/(4000/3600)}; // 4 km/h tourist pace
+}
+
+const fmtDist=m=>m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(1)} km`;
+const fmtTime=s=>{const m=Math.round(s/60);return m<1?'<1 Min':m<60?`${m} Min`:`${Math.floor(m/60)}h ${m%60?` ${m%60} Min`:''}`};
+const gmapsNav=(lat,lng)=>`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+const gmapsView=(lat,lng)=>`https://maps.google.com/?q=${lat},${lng}&zoom=17`;
+const safeSeg=key=>key.replace(/->/g,'_to_').replace(/[^a-zA-Z0-9_\-]/g,'_');
+
+const crowdLabel={low:'Ruhig',med:'Mäßig',high:'Voll'};
+const crowdIcon={low:'🟢',med:'🟡',high:'🔴'};
+const bookLabel={must:'Pflicht',recommended:'Empfohlen',none:null};
+
+/* ═══════════════════════════════════════
+   THEME
+═══════════════════════════════════════ */
+function toggleTheme(){
+  isDark=!isDark;
+  document.documentElement.setAttribute('data-theme',isDark?'dark':'');
+  document.querySelector('.theme-toggle').textContent=isDark?'☀️':'🌙';
+  // Update map tiles for dark mode
+  if(map&&typeof L!=='undefined'){
+    map.eachLayer(l=>{if(l._url&&l._url.includes('carto'))map.removeLayer(l)});
+    const tileUrl=isDark
+      ?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      :'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    L.tileLayer(tileUrl,{attribution:'© OpenStreetMap, © CARTO',maxZoom:19}).addTo(map);
+  }
+}
+
+/* ═══════════════════════════════════════
+   HEADER COLLAPSE
+═══════════════════════════════════════ */
+function collapseHeader(){
+  document.getElementById('hdr').classList.add('collapsed');
+  document.getElementById('app').classList.add('hdr-gone');
+}
+function expandHeader(){
+  document.getElementById('hdr').classList.remove('collapsed');
+  document.getElementById('app').classList.remove('hdr-gone');
+}
+
+/* ═══════════════════════════════════════
+   COORD BADGE – dismissable
+═══════════════════════════════════════ */
+function showCoordBadge(lat,lng){
+  const badge=document.getElementById('coord-badge');
+  document.getElementById('coord-text').textContent=`📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  badge.classList.add('visible');
+  // Fill add forms
+  ['add-lat','add-lat-m'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=lat.toFixed(6)});
+  ['add-lng','add-lng-m'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=lng.toFixed(6)});
+  clearTimeout(coordTimer);
+  coordTimer=setTimeout(hideCoordBadge,4000);
+}
+function hideCoordBadge(){
+  document.getElementById('coord-badge').classList.remove('visible');
+  clearTimeout(coordTimer);
+}
+
+/* ═══════════════════════════════════════
+   METRO HELPERS
+═══════════════════════════════════════ */
+function findNearestStation(lat,lng){
+  let best=null,bestDist=Infinity;
+  for(const[key,data]of Object.entries(METRO)){
+    for(const s of data.stations){
+      const d=haversine(lat,lng,s.lat,s.lng);
+      if(d<bestDist){bestDist=d;best={...s,line:key,lineColor:data.color,lineName:data.name,dist:d}}
+    }
+  }
+  return best;
+}
+
+function findMetroRoute(stA,stB){
+  if(stA.line===stB.line) return{text:`${stA.lineName}: ${stA.n} → ${stB.n}`,color:stA.lineColor,line:stA.line,direct:true};
+  const DEAK=['m1','m2','m3'];
+  if(DEAK.includes(stA.line)&&DEAK.includes(stB.line)){
+    return{text:`${METRO[stA.line].name}: ${stA.n} → Deák · Umstieg · ${METRO[stB.line].name}: Deák → ${stB.n}`,color:stA.lineColor,line:'transfer',direct:false};
+  }
+  return null;
+}
+
+function buildMetroSuggestion(fromLat,fromLng,toLat,toLng){
+  const stA=findNearestStation(fromLat,fromLng),stB=findNearestStation(toLat,toLng);
+  if(!stA||!stB||stA.dist>1000||stB.dist>1000) return null;
+  const route=findMetroRoute(stA,stB);
+  if(!route) return null;
+  const walkToA=calcWalking(fromLat,fromLng,stA.lat,stA.lng);
+  const walkFromB=calcWalking(stB.lat,stB.lng,toLat,toLng);
+  const metroDist=haversine(stA.lat,stA.lng,stB.lat,stB.lng)*1.1;
+  const metroTime=metroDist/(30000/3600);
+  return{route,stA,stB,walkToASec:walkToA.dur,walkFromBSec:walkFromB.dur,metroSec:metroTime,totalMin:Math.round((walkToA.dur+metroTime+walkFromB.dur)/60)};
+}
+
+/* ═══════════════════════════════════════
+   MAP
+═══════════════════════════════════════ */
+function initMap(){
+  if(typeof L==='undefined'){showGoogleMapsFallback();return}
+  map=L.map('map',{center:[47.502,19.052],zoom:14,zoomControl:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap, © CARTO',maxZoom:19
+  }).addTo(map);
+
+  // Hotel marker
+  L.marker([HOTEL.lat,HOTEL.lng],{
+    icon:L.divIcon({className:'',html:`<div style="background:var(--surface,#fff);border:2.5px solid #c0392b;border-radius:10px;padding:3px 9px;font-family:'DM Sans',sans-serif;font-size:.6rem;font-weight:700;color:#c0392b;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.18);">🏨 Hotel</div>`,iconAnchor:[38,14]}),
+    zIndexOffset:1000
+  }).addTo(map).bindPopup(`<div class="pu-name">🏨 ${HOTEL.name}</div><div class="pu-cat">Izabella u. 61, 1064 Budapest</div><div class="pu-row" style="margin-top:5px;font-size:.7rem;background:var(--s2);padding:4px 7px;border-radius:6px;"><b>Ausgangspunkt</b> aller Tagesrouten</div><div style="margin-top:7px"><a href="${gmapsNav(HOTEL.lat,HOTEL.lng)}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:4px;background:#4285f4;color:#fff;padding:5px 9px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.68rem;font-weight:700;text-decoration:none;">🧭 Navigation</a></div>`);
+
+  map.on('click',e=>{
+    showCoordBadge(e.latlng.lat,e.latlng.lng);
+    // Close metro popover on map tap
+    if(metroOn){metroOn=false;document.getElementById('metro-box').classList.remove('open');document.getElementById('metro-toggle-btn').classList.remove('on')}
+  });
+  renderMap();
+}
+
+function showGoogleMapsFallback(){
+  ['map-top-bar','legend'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});
+  document.getElementById('map').innerHTML=`<div style="position:relative;width:100%;height:100%"><iframe src="https://maps.google.com/maps?q=Budapest+Innenstadt&z=14&output=embed&hl=de" width="100%" height="100%" frameborder="0" style="border:0;display:block" allowfullscreen loading="lazy"></iframe><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,.96);border:1px solid #ddd6cc;border-radius:12px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,.14);font-family:'DM Sans',sans-serif;max-width:260px;text-align:center;pointer-events:none"><div style="font-size:1.2rem;margin-bottom:5px">🗺️</div><div style="font-weight:700;font-size:.82rem;margin-bottom:4px">Interaktive Karte</div><div style="font-size:.7rem;color:#9a8c80;line-height:1.4">Datei lokal öffnen für volle Karte.<br><b>Tipp:</b> 🧭 Button für Navigation!</div></div></div>`;
+  mapFallbackMode=true;
+}
+
+function renderMap(){
+  if(!map||typeof L==='undefined') return;
+  locations.forEach(l=>{l._marker=null});
+  [...routeLayers,...markerLayers].forEach(l=>{try{map.removeLayer(l)}catch(e){}});
+  routeLayers=[];markerLayers=[];
+
+  const filtered=currentFilter==='all'?locations:locations.filter(l=>l.day===currentFilter);
+  const dayGroups={};
+  filtered.forEach(loc=>{
+    if(loc.type==='Flughafen') return;
+    if(!dayGroups[loc.day]) dayGroups[loc.day]=[];
+    dayGroups[loc.day].push(loc);
+  });
+
+  // Routes – clean lines only, NO walk labels on map
+  for(const[day,locs]of Object.entries(dayGroups)){
+    const c=dayColor(parseInt(day));
+    const chain=[{lat:HOTEL.lat,lng:HOTEL.lng},...locs];
+    for(let i=0;i<chain.length-1;i++){
+      const from=chain[i],to=chain[i+1];
+      const poly=L.polyline([[from.lat,from.lng],[to.lat,to.lng]],{
+        color:c,weight:3,opacity:.55,dashArray:'8,5',lineJoin:'round'
+      }).addTo(map);
+      routeLayers.push(poly);
+    }
+  }
+
+  // Markers
+  const dayIdx={};
+  filtered.forEach(loc=>{
+    const c=dayColor(loc.day);
+    if(!dayIdx[loc.day]) dayIdx[loc.day]=0;
+    let iconHtml;
+    if(loc.type==='Flughafen'){
+      iconHtml=`<div style="background:var(--surface,#fff);border:2px solid #888;border-radius:8px;padding:2px 8px;font-family:'DM Sans',sans-serif;font-size:.6rem;font-weight:700;color:#555;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12)">✈</div>`;
+    } else {
+      dayIdx[loc.day]++;
+      iconHtml=`<div style="width:28px;height:28px;border-radius:50%;background:${c};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);font-family:'DM Sans',sans-serif">${dayIdx[loc.day]}</div>`;
+    }
+
+    const marker=L.marker([loc.lat,loc.lng],{
+      icon:L.divIcon({className:'',html:iconHtml,iconSize:[28,28],iconAnchor:[14,14]}),
+      zIndexOffset:loc.type==='Flughafen'?0:100
+    }).addTo(map);
+
+    const hoursHtml=loc.hours?`<div class="pu-hours">🕐 ${loc.hours}</div>`:'';
+    const priceHtml=loc.price&&loc.price!=='–'?`<div class="pu-row">💶 ${loc.price}</div>`:'';
+    const timeHtml=loc.time?`<div class="pu-row">📍 Ab ${loc.time}${loc.duration?' · '+loc.duration:''}</div>`:'';
+    const starHtml=loc.rating?`<div class="pu-row">⭐ ${loc.rating}/5</div>`:'';
+    const busHtml=loc.busInfo?`<div class="pu-route"><div class="pu-route-title">Verbindung</div><div class="pu-route-val">${loc.busInfo}</div></div>`:'';
+    const notesHtml=loc.notes?`<div style="margin-top:5px;font-size:.7rem;color:var(--t3);font-style:italic">${loc.notes}</div>`:'';
+    const crowdHtml=loc.crowd?`<div class="pu-crowd ${loc.crowd}">${crowdIcon[loc.crowd]} ${crowdLabel[loc.crowd]}</div>`:'';
+    const bookHtml=loc.booking==='must'?`<div class="pu-row" style="color:var(--red);font-weight:700">🎫 Online-Buchung Pflicht!</div>`:loc.booking==='recommended'?`<div class="pu-row" style="color:var(--amber);font-weight:600">🎫 Vorbuchung empfohlen</div>`:'';
+    const dayObj=DAYS[loc.day-1];
+
+    marker.bindPopup(`
+      <div class="pu-name">${loc.name}</div><div class="pu-cat">${loc.type}</div>
+      ${priceHtml}${timeHtml}${starHtml}${crowdHtml}${bookHtml}${hoursHtml}${busHtml}${notesHtml}
+      <div class="pu-tag" style="background:${c}">${dayObj.label} · ${dayObj.date}</div>
+      <div style="margin-top:7px;display:flex;gap:4px">
+        <a href="${gmapsNav(loc.lat,loc.lng)}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;background:#4285f4;color:#fff;padding:5px 7px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.68rem;font-weight:700;text-decoration:none">🧭 Navigation</a>
+        <a href="${gmapsView(loc.lat,loc.lng)}" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:4px;background:var(--s2);color:var(--t2);padding:5px 7px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.68rem;font-weight:700;text-decoration:none;border:1px solid var(--border)">📍</a>
+      </div>`,{maxWidth:260});
+
+    marker.on('click',()=>highlightCard(loc.id));
+    markerLayers.push(marker);
+    loc._marker=marker;
+  });
+}
+
+/* ═══════════════════════════════════════
+   METRO LAYERS
+═══════════════════════════════════════ */
+function buildMetroLayers(){
+  for(const[key,data]of Object.entries(METRO)){
+    if(metroLines[key]) continue;
+    metroLines[key]=L.polyline(data.stations.map(s=>[s.lat,s.lng]),{color:data.color,weight:4,opacity:.8});
+    metroDots[key]=data.stations.map(s=>{
+      const icon=L.divIcon({className:'',html:`<div style="width:9px;height:9px;border-radius:50%;background:${data.color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,iconSize:[9,9],iconAnchor:[4,4]});
+      return L.marker([s.lat,s.lng],{icon,interactive:true}).bindTooltip(`<b style="font-size:.72rem">${s.n}</b><br><span style="font-size:.65rem;color:#888">${data.name}</span>`,{direction:'top',offset:[0,-5]});
+    });
+  }
+  applyMetroVisibility();
+}
+
+function applyMetroVisibility(){
+  for(const key of Object.keys(METRO)){
+    const on=metroOn&&metroState[key];
+    if(on){metroLines[key]?.addTo(map);metroDots[key].forEach(m=>m.addTo(map))}
+    else{if(metroLines[key])try{map.removeLayer(metroLines[key])}catch(e){};metroDots[key].forEach(m=>{try{map.removeLayer(m)}catch(e){}})}
+  }
+}
+
+function toggleMetro(){
+  metroOn=!metroOn;
+  const box=document.getElementById('metro-box');
+  box.classList.toggle('open',metroOn);
+  document.getElementById('metro-toggle-btn').classList.toggle('on',metroOn);
+  if(!map||typeof L==='undefined') return;
+  if(metroOn&&!metroLines.m1) buildMetroLayers();
+  else applyMetroVisibility();
+}
+function toggleLine(key){metroState[key]=document.getElementById('c'+key).checked;applyMetroVisibility()}
+function hideAllMetro(){for(const key of Object.keys(METRO)){metroState[key]=false;document.getElementById('c'+key).checked=false};applyMetroVisibility()}
+
+/* ═══════════════════════════════════════
+   DAY FILTER
+═══════════════════════════════════════ */
+function filterDay(day,btn){
+  currentFilter=day;
+  document.querySelectorAll('.mctrl').forEach(b=>{b.classList.remove('on');b.style.background='';b.style.borderColor='';b.style.color=''});
+  btn.classList.add('on');
+  if(typeof day==='number'){btn.style.background=dayColor(day);btn.style.borderColor=dayColor(day);btn.style.color='#fff'}
+  renderMap();
+}
+
+/* ═══════════════════════════════════════
+   BUILD PLAN HTML
+═══════════════════════════════════════ */
+function buildSegDetail(fromLat,fromLng,toLat,toLng,segKey){
+  const safeKey=safeSeg(segKey);
+  const wk=calcWalking(fromLat,fromLng,toLat,toLng);
+  const metro=buildMetroSuggestion(fromLat,fromLng,toLat,toLng);
+  let html=`<div class="seg-detail" id="sd-${safeKey}">`;
+  html+=`<div class="seg-opt"><div class="seg-opt-icon">🚶</div><div class="seg-opt-body"><div class="seg-opt-title">Zu Fuß · ${fmtTime(wk.dur)}</div><div class="seg-opt-desc">${fmtDist(wk.dist)} (Touristentempo ~4 km/h)</div></div></div>`;
+  if(metro){
+    const mbadge=metro.route.line!=='transfer'?`<span class="seg-opt-badge" style="background:${metro.route.color};color:#fff">${metro.route.line.toUpperCase()}</span>`:`<span class="seg-opt-badge" style="background:#555;color:#fff">Umstieg</span>`;
+    html+=`<div class="seg-opt"><div class="seg-opt-icon">🚇</div><div class="seg-opt-body"><div class="seg-opt-title">U-Bahn · ~${metro.totalMin} Min</div><div class="seg-opt-desc">🚶 ${Math.round(metro.walkToASec/60)} Min → <b>${metro.stA.n}</b><br>🚇 ${metro.route.text} (~${Math.round(metro.metroSec/60)} Min)<br>🚶 ${Math.round(metro.walkFromBSec/60)} Min → Ziel<br>💶 ~€1,60 · Tageskarte ~€7</div>${mbadge}</div></div>`;
+  }
+  return html+'</div>';
+}
+
+function toggleSegDetail(segKey){
+  const safeKey=safeSeg(segKey);
+  let isOpen=false;
+  document.querySelectorAll(`[id="sd-${safeKey}"]`).forEach(el=>{el.classList.toggle('open');isOpen=el.classList.contains('open')});
+  document.querySelectorAll(`[id="sr-${safeKey}"]`).forEach(el=>el.classList.toggle('expanded',isOpen));
+}
+
+function buildPlanHTML(){
+  return DAYS.map(day=>{
+    const locs=locations.filter(l=>l.day===day.id);
+    const routingLocs=locs.filter(l=>l.type!=='Flughafen');
+    const c=day.color;
+    let totalDist=0;
+    const chain=[{lat:HOTEL.lat,lng:HOTEL.lng},...routingLocs];
+    for(let i=0;i<chain.length-1;i++) totalDist+=calcWalking(chain[i].lat,chain[i].lng,chain[i+1].lat,chain[i+1].lng).dist;
+
+    let routingIdx=0, cards='';
+    locs.forEach(loc=>{
+      if(loc.type==='Flughafen'){
+        const isArrival=loc.time<'15:00';
+        cards+=`<div class="airport-card" onclick="focusLoc(${loc.id})"><div class="airport-icon">✈️</div><div class="airport-body"><div class="airport-name">${loc.name}</div><div class="airport-sub">${loc.time} · ${loc.duration}</div>${loc.busInfo?`<div class="transfer-info">${loc.busInfo}</div>`:''}${loc.notes?`<div style="font-size:.65rem;color:var(--t3);margin-top:3px;font-style:italic">${loc.notes}</div>`:''}<a href="${gmapsView(loc.lat,loc.lng)}" target="_blank" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;background:#4285f4;color:#fff;padding:4px 9px;border-radius:7px;font-size:.65rem;font-weight:700;text-decoration:none">🧭 Maps</a></div></div>`;
+        if(isArrival) cards+=`<div class="hotel-checkin"><div class="hotel-checkin-icon">🏨</div><div><div class="hotel-checkin-text">Hotel Check-in · Izabella u. 61</div><div class="hotel-checkin-sub">Koffer abgeben & frisch machen</div></div></div>`;
+        return;
+      }
+
+      const from=chain[routingIdx];
+      const wk=calcWalking(from.lat,from.lng,loc.lat,loc.lng);
+      const segKey=`${from.id||'hotel'}->${loc.id}`;
+      const safeKey=safeSeg(segKey);
+      const metro=buildMetroSuggestion(from.lat,from.lng,loc.lat,loc.lng);
+
+      cards+=`<div class="route-seg" id="sr-${safeKey}" onclick="toggleSegDetail('${segKey}')"><span class="seg-icon">🚶</span><div class="seg-main"><div class="seg-info">${fmtTime(wk.dur)}</div><div class="seg-dist">${fmtDist(wk.dist)}</div></div>${metro?'<span class="seg-expand-btn">🚇 U-Bahn</span>':''}</div>${buildSegDetail(from.lat,from.lng,loc.lat,loc.lng,segKey)}`;
+
+      const chips=[
+        loc.price&&loc.price!=='–'?`<span class="chip chip-price">💶 ${loc.price}</span>`:'',
+        loc.time?`<span class="chip chip-time">🕐 ${loc.time}${loc.duration?' · '+loc.duration:''}</span>`:'',
+        loc.rating?`<span class="chip chip-star">⭐ ${loc.rating}</span>`:'',
+        loc.crowd?`<span class="chip chip-crowd ${loc.crowd}">${crowdIcon[loc.crowd]} ${crowdLabel[loc.crowd]}</span>`:'',
+        loc.booking==='must'?`<span class="chip chip-book">🎫 Pflicht</span>`:loc.booking==='recommended'?`<span class="chip chip-book">🎫 Empf.</span>`:'',
+        loc.busInfo?`<span class="chip chip-bus">🚌</span>`:'',
+      ].filter(Boolean).join('');
+
+      cards+=`<div class="loc-card" id="card-${loc.id}" onclick="focusLoc(${loc.id})"><div class="loc-num" style="background:${c}18;color:${c};border:1.5px solid ${c}44">${routingIdx+1}</div><div class="loc-body"><div class="loc-name">${loc.name}</div><div class="loc-cat">${loc.type}</div>${chips?`<div class="loc-chips">${chips}</div>`:''}</div><div class="loc-actions"><button class="ic" onclick="event.stopPropagation();focusLoc(${loc.id})" title="Karte">🗺</button><a class="ic" href="${gmapsNav(loc.lat,loc.lng)}" target="_blank" onclick="event.stopPropagation()" title="Navigation" style="text-decoration:none">🧭</a><button class="ic del" onclick="event.stopPropagation();deleteLoc(${loc.id})" title="Löschen">✕</button></div></div>`;
+
+      routingIdx++;
+      chain[routingIdx]={lat:loc.lat,lng:loc.lng,id:loc.id};
+    });
+
+    if(!locs.length) cards=`<div style="padding:10px 14px;font-size:.75rem;color:var(--t3);font-style:italic">Keine Orte.</div>`;
+    return `<div class="day-block" id="db-${day.id}"><div class="day-head" onclick="toggleDay(${day.id})"><div class="day-stripe" style="background:${c}"></div><div class="day-info"><div class="day-label" style="color:${c}">${day.label}</div><div class="day-date">${day.date}</div></div><div class="day-meta"><div class="day-count">${routingLocs.length} Stopps</div>${totalDist>0?`<div class="day-dist">🚶 ${fmtDist(totalDist)}</div>`:''}</div><span class="chev">▾</span></div><div class="day-body">${cards}</div></div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   BUILD OVERVIEW HTML – with Crowd & Booking
+═══════════════════════════════════════ */
+function buildOvHTML(){
+  const total=locations.filter(l=>l.type!=='Flughafen').length;
+  let totalWalk=0;
+  DAYS.forEach(day=>{
+    const locs=locations.filter(l=>l.day===day.id&&l.type!=='Flughafen');
+    const chain=[{lat:HOTEL.lat,lng:HOTEL.lng},...locs];
+    for(let i=0;i<chain.length-1;i++) totalWalk+=calcWalking(chain[i].lat,chain[i].lng,chain[i+1].lat,chain[i+1].lng).dist;
+  });
+
+  // Booking summary
+  const mustBook=locations.filter(l=>l.booking==='must');
+  const recBook=locations.filter(l=>l.booking==='recommended');
+  let bookingSection='';
+  if(mustBook.length||recBook.length){
+    let rows='';
+    mustBook.forEach(l=>rows+=`<div class="booking-row"><div class="booking-dot" style="background:${dayColor(l.day)}"></div><span class="booking-name">${l.name}</span><span style="font-size:.6rem;color:var(--t3)">T${l.day}</span><span class="booking-badge must">🎫 Pflicht</span></div>`);
+    recBook.forEach(l=>rows+=`<div class="booking-row"><div class="booking-dot" style="background:${dayColor(l.day)}"></div><span class="booking-name">${l.name}</span><span style="font-size:.6rem;color:var(--t3)">T${l.day}</span><span class="booking-badge rec">🎫 Empf.</span></div>`);
+    bookingSection=`<div class="ov-section-title">🎫 Online-Tickets & Buchungen</div><div class="booking-table">${rows}</div>`;
+  }
+
+  // Crowd summary
+  const highCrowd=locations.filter(l=>l.crowd==='high');
+  let crowdSection='';
+  if(highCrowd.length){
+    let rows='';
+    highCrowd.forEach(l=>rows+=`<div class="booking-row"><div class="booking-dot" style="background:${dayColor(l.day)}"></div><span class="booking-name">${l.name}</span><span style="font-size:.6rem;color:var(--t3)">T${l.day}</span><span class="booking-badge must">🔴 Voll</span></div>`);
+    crowdSection=`<div class="ov-section-title">⚠️ Stark besucht – Früh hingehen!</div><div class="booking-table">${rows}</div>`;
+  }
+
+  const dayList=DAYS.map(day=>{
+    const locs=locations.filter(l=>l.day===day.id);
+    const rows=locs.map(l=>{
+      const crowdBadge=l.crowd?`<span class="ov-crowd ${l.crowd}">${crowdIcon[l.crowd]}</span>`:'';
+      const bookBadge=l.booking==='must'?`<span class="ov-book">🎫</span>`:l.booking==='recommended'?`<span class="ov-book">📋</span>`:'';
+      const price=l.price&&l.price!=='–'&&l.price!=='Kostenlos'&&l.price!=='Eintritt frei'?`<span class="ov-price">${l.price}</span>`:'';
+      return `<div class="ov-loc" onclick="focusLoc(${l.id})"><div class="ov-dot" style="background:${l.type==='Flughafen'?'#888':day.color}"></div><span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${l.name}</span>${crowdBadge}${bookBadge}${price}<a href="${gmapsNav(l.lat,l.lng)}" target="_blank" onclick="event.stopPropagation()" style="flex-shrink:0;margin-left:3px;font-size:.75rem;text-decoration:none;opacity:.6">🧭</a></div>`;
+    }).join('');
+    return `<div class="ov-day"><div class="ov-day-lbl" style="color:${day.color}">${day.label} – ${day.date}</div>${rows}</div><div class="ov-sep"></div>`;
+  }).join('');
+
+  return `<div class="stats-grid"><div class="stat-box"><div class="stat-n">${total}</div><div class="stat-l">Stopps</div></div><div class="stat-box"><div class="stat-n">5</div><div class="stat-l">Tage</div></div><div class="stat-box"><div class="stat-n">${fmtDist(totalWalk)}</div><div class="stat-l">Fußweg</div></div></div><div class="ov-sep"></div>${bookingSection}${crowdSection}<div class="ov-section-title" style="margin-top:4px">💡 🟢 Ruhig · 🟡 Mäßig · 🔴 Voll · 🎫 Buchung · 📋 Empfohlen</div><div class="ov-sep"></div>${dayList}`;
+}
+
+/* ═══════════════════════════════════════
+   BUILD ADD FORM
+═══════════════════════════════════════ */
+function buildAddHTML(prefix=''){
+  return `<div class="add-wrap">
+    <h3>➕ Neuen Ort hinzufügen</h3>
+    <div class="fg"><label>Name *</label><input type="text" id="add-name${prefix}" placeholder="z.B. Széchenyi Therme"></div>
+    <div class="fg2">
+      <div class="fg"><label>Kategorie</label><select id="add-type${prefix}"><option>Sehenswürdigkeit</option><option>Restaurant</option><option>Museum</option><option>Therme / Bad</option><option>Nachtleben</option><option>Einkaufen</option><option>Aussichtspunkt</option><option>Kirche</option><option>Sonstiges</option></select></div>
+      <div class="fg"><label>Tag</label><select id="add-day${prefix}"><option value="1">Tag 1</option><option value="2">Tag 2</option><option value="3">Tag 3</option><option value="4">Tag 4</option><option value="5">Tag 5</option></select></div>
+    </div>
+    <div class="fg2">
+      <div class="fg"><label>Preis</label><input type="text" id="add-price${prefix}" placeholder="~€12"></div>
+      <div class="fg"><label>Uhrzeit</label><input type="text" id="add-time${prefix}" placeholder="10:00"></div>
+    </div>
+    <div class="fg2">
+      <div class="fg"><label>Dauer</label><input type="text" id="add-dur${prefix}" placeholder="~2h"></div>
+      <div class="fg"><label>Bewertung</label><input type="number" id="add-rat${prefix}" min="1" max="5" step=".1" placeholder="4.5"></div>
+    </div>
+    <div class="fg"><label>Öffnungszeiten</label><input type="text" id="add-hours${prefix}" placeholder="Mo–Fr 9–18h"></div>
+    <div class="fg2">
+      <div class="fg"><label>Andrang</label><select id="add-crowd${prefix}"><option value="">–</option><option value="low">🟢 Ruhig</option><option value="med">🟡 Mäßig</option><option value="high">🔴 Voll</option></select></div>
+      <div class="fg"><label>Buchung</label><select id="add-book${prefix}"><option value="none">Keine</option><option value="recommended">Empfohlen</option><option value="must">Pflicht</option></select></div>
+    </div>
+    <div class="fg2">
+      <div class="fg"><label>Breite (Lat)</label><input type="number" id="add-lat${prefix}" step=".0001" placeholder="47.5000"></div>
+      <div class="fg"><label>Länge (Lng)</label><input type="number" id="add-lng${prefix}" step=".0001" placeholder="19.0500"></div>
+    </div>
+    <div class="fg"><label>Bus / ÖPNV</label><input type="text" id="add-bus${prefix}" placeholder="🚌 Bus 16 · ~15 Min"></div>
+    <div class="fg"><label>Notizen</label><textarea id="add-notes${prefix}" placeholder="Tipps..."></textarea></div>
+    <div class="tip-box">💡 Auf Karte tippen → Koordinaten automatisch!</div>
+    <div class="btn-row">
+      <button class="btn btn-g" onclick="clearAdd('${prefix}')">Leeren</button>
+      <button class="btn btn-r" onclick="addLoc('${prefix}')">✚ Hinzufügen</button>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:6px">Alle Orte</div>
+      <div id="ml${prefix}">${buildManageHTML()}</div>
+    </div>
+  </div>`;
+}
+
+function buildManageHTML(){
+  return locations.map(l=>`<div class="manage-item"><div class="manage-dot" style="background:${dayColor(l.day)}"></div><span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:.75rem" title="${l.name}">${l.name}</span><span style="font-size:.62rem;color:var(--t3);flex-shrink:0">T${l.day}</span><button class="ic del" onclick="deleteLoc(${l.id})" style="opacity:1">✕</button></div>`).join('')||'<div style="font-size:.75rem;color:var(--t3);font-style:italic;padding:4px 0">Keine Orte.</div>';
+}
+
+/* ═══════════════════════════════════════
+   RENDER
+═══════════════════════════════════════ */
+function renderSidebar(){
+  const plan=buildPlanHTML(),ov=buildOvHTML();
+  document.getElementById('dp-plan').innerHTML=plan;
+  document.getElementById('dp-ov').innerHTML=ov;
+  document.getElementById('dp-add').innerHTML=buildAddHTML();
+  document.getElementById('dplan').innerHTML=plan;
+  document.getElementById('dov').innerHTML=ov;
+  document.getElementById('dadd').innerHTML=buildAddHTML('-m');
+}
+function renderAll(){renderSidebar();renderMap()}
+
+/* ═══════════════════════════════════════
+   INTERACTIONS
+═══════════════════════════════════════ */
+function toggleDay(id){document.querySelectorAll(`[id="db-${id}"]`).forEach(el=>el.classList.toggle('closed'))}
+
+function focusLoc(id){
+  const loc=locations.find(l=>l.id===id);
+  if(!loc) return;
+  if(map){
+    map.setView([loc.lat,loc.lng],16,{animate:true});
+    if(loc._marker) setTimeout(()=>loc._marker.openPopup(),300);
+  }
+  highlightCard(id);
+  if(window.innerWidth<=700) setTimeout(()=>{
+    document.getElementById('drawer').classList.remove('open');
+    document.querySelectorAll('.mn-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('mn-map').classList.add('active');
+  },150);
+}
+
+function highlightCard(id){
+  document.querySelectorAll('.loc-card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll(`#card-${id}`).forEach(c=>{c.classList.add('active');c.scrollIntoView({behavior:'smooth',block:'nearest'})});
+}
+
+function deleteLoc(id){
+  if(!confirm('Ort wirklich löschen?')) return;
+  locations=locations.filter(l=>l.id!==id);renderAll();showToast('Ort gelöscht');
+}
+
+function addLoc(prefix=''){
+  const p=prefix;
+  const name=document.getElementById('add-name'+p)?.value.trim();
+  const lat=parseFloat(document.getElementById('add-lat'+p)?.value);
+  const lng=parseFloat(document.getElementById('add-lng'+p)?.value);
+  if(!name){showToast('⚠ Name erforderlich');return}
+  if(isNaN(lat)||isNaN(lng)){showToast('⚠ Koordinaten fehlen!');return}
+  const loc={
+    id:nextId++,day:parseInt(document.getElementById('add-day'+p).value),
+    name,type:document.getElementById('add-type'+p).value,lat,lng,
+    price:document.getElementById('add-price'+p)?.value.trim()||null,
+    time:document.getElementById('add-time'+p)?.value.trim()||null,
+    duration:document.getElementById('add-dur'+p)?.value.trim()||null,
+    rating:parseFloat(document.getElementById('add-rat'+p)?.value)||null,
+    hours:document.getElementById('add-hours'+p)?.value.trim()||null,
+    busInfo:document.getElementById('add-bus'+p)?.value.trim()||null,
+    notes:document.getElementById('add-notes'+p)?.value.trim()||null,
+    crowd:document.getElementById('add-crowd'+p)?.value||null,
+    booking:document.getElementById('add-book'+p)?.value||'none',
+  };
+  locations.push(loc);clearAdd(p);renderAll();
+  setTimeout(()=>focusLoc(loc.id),300);
+  showToast(`✅ "${loc.name}" hinzugefügt`);
+}
+
+function clearAdd(prefix=''){
+  ['add-name','add-price','add-time','add-dur','add-lat','add-lng','add-notes','add-rat','add-bus','add-hours']
+    .forEach(id=>{const el=document.getElementById(id+prefix);if(el)el.value=''});
+  const crowd=document.getElementById('add-crowd'+prefix);if(crowd)crowd.value='';
+  const book=document.getElementById('add-book'+prefix);if(book)book.value='none';
+}
+
+/* ═══════════════════════════════════════
+   TABS & NAV
+═══════════════════════════════════════ */
+function deskTab(name,btn){
+  document.querySelectorAll('#desk-tabbar .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#desk-panel .pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('dp-'+name).classList.add('active');
+}
+function drawerTab(id,btn){
+  document.querySelectorAll('.dtab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.dpane').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function mobNav(target,btn){
+  document.querySelectorAll('.mn-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const drawer=document.getElementById('drawer');
+  if(target==='map'){drawer.classList.remove('open');return}
+  drawer.classList.add('open');
+  const tabMap={plan:'dplan',ov:'dov',add:'dadd'};
+  document.querySelectorAll('.dtab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.dpane').forEach(p=>p.classList.remove('active'));
+  const idx={plan:0,ov:1,add:2}[target]??0;
+  const tabBtns=document.querySelectorAll('.dtab-btn');
+  if(tabBtns[idx]) tabBtns[idx].classList.add('active');
+  document.getElementById(tabMap[target]).classList.add('active');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open')}
+
+/* Swipe to close drawer */
+let touchStartY=0;
+document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!document.getElementById('drawer').classList.contains('open')) return;
+  if(e.touches[0].clientY-touchStartY>60) closeDrawer();
+},{passive:true});
+
+/* ═══════════════════════════════════════
+   SAVE / LOAD
+═══════════════════════════════════════ */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({locations,nextId},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='budapest-2026.json';a.click();
+  showToast('💾 Gespeichert!');
+}
+function openModal(){document.getElementById('modal-bg').classList.add('open')}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open')}
+function importJSON(){
+  try{
+    const d=JSON.parse(document.getElementById('import-json').value);
+    if(!d.locations) throw 0;
+    locations=d.locations;if(d.nextId)nextId=d.nextId;
+    renderAll();closeModal();showToast('✅ Importiert!');
+  }catch{showToast('❌ Ungültiges Format')}
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{renderSidebar();initMap()});
+</script>
+</body>
+</html>
